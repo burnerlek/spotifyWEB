@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kraken Spotify Display</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -61,11 +62,10 @@
       height: 14px;
       background: #1db954;
       border-radius: 2px;
-      transform-origin: center 75px; /* Rotates bars around album center */
+      transform-origin: center 75px;
       animation: pulseBar 1.2s ease-in-out infinite alternate;
     }
 
-    /* Keyframes for equalizer bar animation */
     @keyframes pulseBar {
       0% {
         height: 6px;
@@ -142,8 +142,8 @@
   <div id="content" class="card">Loading...</div>
 
   <script>
-    const CLIENT_ID = 'YOUR_SPOTIFY_CLIENT_ID_HERE';
-    const REDIRECT_URI = 'https://<your-username>.github.io/kraken-spotify/';
+    const CLIENT_ID = '60acf98167984de5820f1a96728ddce6';
+    const REDIRECT_URI = 'https://burnerlek.github.io/spotifyWEB/';
     const SCOPES = 'user-read-currently-playing user-read-playback-state';
 
     const params = new URLSearchParams(window.location.search);
@@ -208,8 +208,7 @@
       }
     }
 
-    // Generates circular visualizer bars dynamically around the artwork
-    function createVisualizerHTML(barCount = 24) {
+    function createVisualizerHTML(barCount = 28) {
       let barsHTML = '<div class="visualizer-ring">';
       for (let i = 0; i < barCount; i++) {
         const angle = (360 / barCount) * i;
