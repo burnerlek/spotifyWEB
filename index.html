@@ -18,7 +18,7 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      border-radius: 50%; /* Helper preview for circular display */
+      border-radius: 50%;
     }
 
     .card {
@@ -29,16 +29,63 @@
       text-align: center;
       width: 100%;
       height: 100%;
-      padding: 24px;
+      padding: 20px;
+    }
+
+    /* Container for Art + Visualizer */
+    .art-container {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    /* Animated Visualizer Bars Ring */
+    .visualizer-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .bar {
+      position: absolute;
+      width: 3px;
+      height: 14px;
+      background: #1db954;
+      border-radius: 2px;
+      transform-origin: center 75px; /* Rotates bars around album center */
+      animation: pulseBar 1.2s ease-in-out infinite alternate;
+    }
+
+    /* Keyframes for equalizer bar animation */
+    @keyframes pulseBar {
+      0% {
+        height: 6px;
+        opacity: 0.3;
+        box-shadow: 0 0 2px #1db954;
+      }
+      100% {
+        height: 18px;
+        opacity: 1;
+        box-shadow: 0 0 8px #1db954, 0 0 12px #1db954;
+      }
     }
 
     .art-wrapper {
       position: relative;
-      width: 130px;
-      height: 130px;
-      margin-bottom: 12px;
+      width: 110px;
+      height: 110px;
       border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 15px rgba(29, 185, 84, 0.2);
+      z-index: 2;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8);
     }
 
     .art-wrapper img {
@@ -53,6 +100,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      z-index: 2;
     }
 
     h2 {
@@ -74,26 +122,6 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-      font-size: 10px;
-      color: #1db954;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .dot {
-      width: 6px;
-      height: 6px;
-      background-color: #1db954;
-      border-radius: 50%;
-      box-shadow: 0 0 8px #1db954;
     }
 
     button {
@@ -180,6 +208,19 @@
       }
     }
 
+    // Generates circular visualizer bars dynamically around the artwork
+    function createVisualizerHTML(barCount = 24) {
+      let barsHTML = '<div class="visualizer-ring">';
+      for (let i = 0; i < barCount; i++) {
+        const angle = (360 / barCount) * i;
+        const delay = (Math.random() * 0.8).toFixed(2);
+        const duration = (0.6 + Math.random() * 0.6).toFixed(2);
+        barsHTML += `<div class="bar" style="transform: rotate(${angle}deg); animation-delay: ${delay}s; animation-duration: ${duration}s;"></div>`;
+      }
+      barsHTML += '</div>';
+      return barsHTML;
+    }
+
     async function fetchNowPlaying() {
       const token = localStorage.getItem('access_token');
       const content = document.getElementById('content');
@@ -196,8 +237,10 @@
 
         if (res.status === 204 || res.status === 202) {
           content.innerHTML = `
-            <div class="art-wrapper" style="background:#121212; display:flex; align-items:center; justify-content:center;">
-              <span style="font-size:32px;">🎵</span>
+            <div class="art-container">
+              <div class="art-wrapper" style="background:#121212; display:flex; align-items:center; justify-content:center;">
+                <span style="font-size:32px;">🎵</span>
+              </div>
             </div>
             <div class="track-info">
               <h2>Paused</h2>
@@ -215,14 +258,18 @@
 
         const data = await res.json();
         const track = data.item;
+        const isPlaying = data.is_playing;
+
         content.innerHTML = `
-          <div class="art-wrapper">
-            <img src="${track.album.images[0].url}" alt="Album Art" />
+          <div class="art-container">
+            ${isPlaying ? createVisualizerHTML(28) : ''}
+            <div class="art-wrapper">
+              <img src="${track.album.images[0].url}" alt="Album Art" />
+            </div>
           </div>
           <div class="track-info">
             <h2>${track.name}</h2>
             <p>${track.artists.map(a => a.name).join(', ')}</p>
-            <div class="status-badge"><span class="dot"></span> Playing</div>
           </div>
         `;
       } catch (err) {
