@@ -33,7 +33,7 @@
       padding: 20px;
     }
 
-    /* Container for Disc + Visualizer */
+    /* Outer Fixed Container */
     .art-container {
       position: relative;
       width: 150px;
@@ -44,42 +44,50 @@
       margin-bottom: 8px;
     }
 
-    /* Animated Visualizer Bars Ring */
+    /* Visualizer Ring - Centered Overlay */
     .visualizer-ring {
       position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       pointer-events: none;
     }
 
-    .bar {
+    /* Centered Rotating Bars */
+    .bar-wrapper {
       position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .bar {
       width: 3px;
-      height: 14px;
+      height: 12px;
       background: #1db954;
       border-radius: 2px;
-      transform-origin: center 75px;
       animation: pulseBar 1.2s ease-in-out infinite alternate;
     }
 
     @keyframes pulseBar {
       0% {
-        height: 6px;
+        height: 4px;
         opacity: 0.3;
         box-shadow: 0 0 2px #1db954;
       }
       100% {
-        height: 18px;
+        height: 14px;
         opacity: 1;
         box-shadow: 0 0 8px #1db954, 0 0 12px #1db954;
       }
     }
 
-    /* Circular Vinyl Disc Styling */
+    /* Spinning Vinyl Disc */
     .disc-wrapper {
       position: relative;
       width: 115px;
@@ -101,7 +109,6 @@
       border-radius: 50%;
     }
 
-    /* Vinyl Center Hole & Label Ring Effects */
     .disc-wrapper::after {
       content: '';
       position: absolute;
@@ -241,7 +248,10 @@
         const angle = (360 / barCount) * i;
         const delay = (Math.random() * 0.8).toFixed(2);
         const duration = (0.6 + Math.random() * 0.6).toFixed(2);
-        barsHTML += `<div class="bar" style="transform: rotate(${angle}deg); animation-delay: ${delay}s; animation-duration: ${duration}s;"></div>`;
+        barsHTML += `
+          <div class="bar-wrapper" style="transform: rotate(${angle}deg);">
+            <div class="bar" style="animation-delay: ${delay}s; animation-duration: ${duration}s;"></div>
+          </div>`;
       }
       barsHTML += '</div>';
       return barsHTML;
