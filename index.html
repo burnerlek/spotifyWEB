@@ -11,7 +11,7 @@
       padding: 0;
       background: #000;
       color: #fff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       height: 100vh;
       width: 100vw;
       display: flex;
@@ -22,7 +22,7 @@
       border-radius: 50%;
     }
 
-    .card {
+    .widget {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -30,88 +30,37 @@
       text-align: center;
       width: 100%;
       height: 100%;
-      padding: 16px;
+      padding: 24px 28px;
     }
 
-    /* Fixed Outer Canvas */
-    .art-container {
+    /* iOS Style Rounded Album Art */
+    .art-wrapper {
       position: relative;
-      width: 155px;
-      height: 155px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 110px;
+      height: 110px;
+      border-radius: 20px;
       margin-bottom: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
 
-    /* Static Glowing Spotify Green Outer Ring */
-    .art-container::before {
-      content: '';
-      position: absolute;
-      width: 148px;
-      height: 148px;
-      border-radius: 50%;
-      border: 2px solid rgba(29, 185, 84, 0.4);
-      box-shadow: 0 0 12px rgba(29, 185, 84, 0.3);
-      z-index: 1;
-    }
-
-    /* Vinyl Record Design */
-    .disc-wrapper {
-      position: relative;
-      width: 135px;
-      height: 135px;
-      border-radius: 50%;
-      z-index: 2;
-      background: #111;
-      /* Concentric vinyl groove reflections */
-      box-shadow: 
-        0 0 0 2px #222,
-        0 0 0 4px #181818,
-        0 0 0 8px #282828,
-        0 0 0 12px #151515,
-        0 8px 24px rgba(0, 0, 0, 0.9);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Center Album Art Label */
-    .disc-wrapper img {
-      width: 65%;
-      height: 65%;
+    .art-wrapper img {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
-      border-radius: 50%;
-      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
-    }
-
-    /* Spindle Center Hole */
-    .disc-wrapper::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 14px;
-      height: 14px;
-      background: #000;
-      border: 2px solid #222;
-      border-radius: 50%;
-      z-index: 3;
+      border-radius: 20px;
     }
 
     .track-info {
-      width: 82%;
+      width: 85%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      z-index: 2;
+      margin-bottom: 8px;
     }
 
     h2 {
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 600;
       margin: 0;
       width: 100%;
       white-space: nowrap;
@@ -122,12 +71,45 @@
 
     p {
       font-size: 11px;
-      color: #b3b3b3;
-      margin: 3px 0 0;
+      color: rgba(255, 255, 255, 0.6);
+      margin: 2px 0 0;
       width: 100%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    /* iOS Style Scrubber Bar */
+    .progress-container {
+      width: 80%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .bar-background {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #fff;
+      border-radius: 2px;
+      width: 0%;
+    }
+
+    .time-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
     }
 
     button {
@@ -143,7 +125,7 @@
   </style>
 </head>
 <body>
-  <div id="content" class="card">Loading...</div>
+  <div id="content" class="widget">Loading...</div>
 
   <script>
     const CLIENT_ID = '60acf98167984de5820f1a96728ddce6';
@@ -212,6 +194,13 @@
       }
     }
 
+    function formatTime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+
     async function fetchNowPlaying() {
       const token = localStorage.getItem('access_token');
       const content = document.getElementById('content');
@@ -228,10 +217,8 @@
 
         if (res.status === 204 || res.status === 202) {
           content.innerHTML = `
-            <div class="art-container">
-              <div class="disc-wrapper">
-                <span style="font-size:32px;">🎵</span>
-              </div>
+            <div class="art-wrapper" style="background:#1c1c1e; display:flex; align-items:center; justify-content:center;">
+              <span style="font-size:32px;">🎵</span>
             </div>
             <div class="track-info">
               <h2>Paused</h2>
@@ -249,16 +236,26 @@
 
         const data = await res.json();
         const track = data.item;
+        const progressMs = data.progress_ms || 0;
+        const durationMs = track.duration_ms;
+        const pct = ((progressMs / durationMs) * 100).toFixed(1);
 
         content.innerHTML = `
-          <div class="art-container">
-            <div class="disc-wrapper">
-              <img src="${track.album.images[0].url}" alt="Album Art" />
-            </div>
+          <div class="art-wrapper">
+            <img src="${track.album.images[0].url}" alt="Album Art" />
           </div>
           <div class="track-info">
             <h2>${track.name}</h2>
             <p>${track.artists.map(a => a.name).join(', ')}</p>
+          </div>
+          <div class="progress-container">
+            <div class="bar-background">
+              <div class="bar-fill" style="width: ${pct}%;"></div>
+            </div>
+            <div class="time-labels">
+              <span>${formatTime(progressMs)}</span>
+              <span>-${formatTime(durationMs - progressMs)}</span>
+            </div>
           </div>
         `;
       } catch (err) {
@@ -270,7 +267,7 @@
       getAccessToken(code);
     } else {
       fetchNowPlaying();
-      setInterval(fetchNowPlaying, 3000);
+      setInterval(fetchNowPlaying, 1000); // Polls every second to keep progress smooth
     }
   </script>
 </body>
