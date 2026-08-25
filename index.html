@@ -33,6 +33,7 @@
       padding: 26px 16px 20px;
     }
 
+    /* Album Art */
     .art-wrapper {
       position: relative;
       width: 160px;
@@ -78,6 +79,7 @@
       text-overflow: ellipsis;
     }
 
+    /* Progress Bar */
     .progress-container {
       width: 68%;
       display: flex;
@@ -213,7 +215,7 @@
     async function refreshAccessToken() {
       const refreshToken = localStorage.getItem('refresh_token');
       if (!refreshToken) {
-        redirectToAuth();
+        renderLoginButton();
         return false;
       }
 
@@ -236,13 +238,19 @@
           }
           return true;
         } else {
-          redirectToAuth();
+          renderLoginButton();
           return false;
         }
       } catch (e) {
         console.error("Token refresh failed", e);
+        renderLoginButton();
         return false;
       }
+    }
+
+    function renderLoginButton() {
+      const content = document.getElementById('content');
+      content.innerHTML = `<button onclick="redirectToAuth()">Log in with Spotify</button>`;
     }
 
     function formatTime(ms) {
@@ -254,10 +262,9 @@
 
     async function fetchNowPlaying() {
       const token = localStorage.getItem('access_token');
-      const content = document.getElementById('content');
 
       if (!token) {
-        content.innerHTML = `<button onclick="redirectToAuth()">Log in with Spotify</button>`;
+        renderLoginButton();
         return;
       }
 
@@ -267,6 +274,7 @@
         });
 
         if (res.status === 204 || res.status === 202) {
+          const content = document.getElementById('content');
           content.innerHTML = `
             <div class="art-wrapper" style="background:#1c1c1e; display:flex; align-items:center; justify-content:center;">
               <span style="font-size:42px;">🎵</span>
@@ -291,6 +299,7 @@
         const durationMs = track.duration_ms;
         const pct = ((progressMs / durationMs) * 100).toFixed(1);
 
+        const content = document.getElementById('content');
         content.innerHTML = `
           <div class="art-wrapper">
             <img src="${track.album.images[0].url}" alt="Album Art" />
