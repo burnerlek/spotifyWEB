@@ -65,9 +65,7 @@
     }
 
 
-    /* =========================
-       ALBUM ART
-    ========================== */
+    /* Album Art */
 
     .art-wrapper {
       position: relative;
@@ -95,10 +93,6 @@
     }
 
 
-    /* =========================
-       TRACK INFO
-    ========================== */
-
     .track-info {
       width: 84%;
 
@@ -113,7 +107,6 @@
 
     h2 {
       font-size: 16px;
-
       font-weight: 700;
 
       margin: 0;
@@ -121,9 +114,7 @@
       width: 100%;
 
       white-space: nowrap;
-
       overflow: hidden;
-
       text-overflow: ellipsis;
 
       letter-spacing: -0.3px;
@@ -141,16 +132,12 @@
       width: 100%;
 
       white-space: nowrap;
-
       overflow: hidden;
-
       text-overflow: ellipsis;
     }
 
 
-    /* =========================
-       PROGRESS BAR
-    ========================== */
+    /* Progress Bar */
 
     .progress-container {
       width: 68%;
@@ -166,7 +153,6 @@
 
     .bar-background {
       width: 100%;
-
       height: 4px;
 
       background:
@@ -197,7 +183,6 @@
       position: absolute;
 
       right: -4px;
-
       top: 50%;
 
       transform:
@@ -211,8 +196,7 @@
       border-radius: 50%;
 
       box-shadow:
-        0 0 4px
-        rgba(0, 0, 0, 0.5);
+        0 0 4px rgba(0,0,0,0.5);
     }
 
 
@@ -236,18 +220,14 @@
     }
 
 
-    /* =========================
-       LOGIN BUTTON
-    ========================== */
-
     button {
-      padding: 12px 24px;
+      padding: 10px 20px;
 
-      font-size: 13px;
+      font-size: 12px;
 
       cursor: pointer;
 
-      border-radius: 24px;
+      border-radius: 20px;
 
       border: none;
 
@@ -291,11 +271,18 @@
 
 
     /*
-      Prevent multiple Spotify
-      requests from running at once.
+      Prevent overlapping requests.
     */
 
     let isFetching = false;
+
+
+    /*
+      Prevent requests while
+      rate limited.
+    */
+
+    let rateLimitedUntil = 0;
 
 
     /* =========================
@@ -334,7 +321,7 @@
           possible[
             x % possible.length
           ],
-        ""
+        ''
       );
     }
 
@@ -370,92 +357,75 @@
 
 
     /* =========================
-       REDIRECT TO SPOTIFY LOGIN
+       SPOTIFY LOGIN
     ========================== */
 
     async function redirectToAuth() {
 
-      try {
-
-        console.log(
-          "Starting Spotify login..."
-        );
+      console.log(
+        'Starting Spotify login...'
+      );
 
 
-        const codeVerifier =
-          generateRandomString(64);
+      const codeVerifier =
+        generateRandomString(64);
 
 
-        const hashed =
-          await sha256(
-            codeVerifier
-          );
-
-
-        const codeChallenge =
-          base64encode(
-            hashed
-          );
-
-
-        /*
-          Save verifier before
-          leaving the website.
-        */
-
-        localStorage.setItem(
-          'code_verifier',
+      const hashed =
+        await sha256(
           codeVerifier
         );
 
 
-        const authUrl =
-          new URL(
-            'https://accounts.spotify.com/authorize'
-          );
-
-
-        authUrl.search =
-          new URLSearchParams({
-
-            response_type:
-              'code',
-
-            client_id:
-              CLIENT_ID,
-
-            scope:
-              SCOPES,
-
-            code_challenge_method:
-              'S256',
-
-            code_challenge:
-              codeChallenge,
-
-            redirect_uri:
-              REDIRECT_URI
-
-          }).toString();
-
-
-        console.log(
-          "Redirecting to Spotify..."
+      const codeChallenge =
+        base64encode(
+          hashed
         );
 
 
-        window.location.href =
-          authUrl.toString();
+      /*
+        Save this before going
+        to Spotify.
+      */
 
-      }
-      catch (err) {
+      localStorage.setItem(
+        'code_verifier',
+        codeVerifier
+      );
 
-        console.error(
-          "Auth redirect error:",
-          err
+
+      const authUrl =
+        new URL(
+          'https://accounts.spotify.com/authorize'
         );
 
-      }
+
+      authUrl.search =
+        new URLSearchParams({
+
+          response_type:
+            'code',
+
+          client_id:
+            CLIENT_ID,
+
+          scope:
+            SCOPES,
+
+          code_challenge_method:
+            'S256',
+
+          code_challenge:
+            codeChallenge,
+
+          redirect_uri:
+            REDIRECT_URI
+
+        }).toString();
+
+
+      window.location.href =
+        authUrl.toString();
     }
 
 
@@ -463,22 +433,7 @@
        SHOW LOGIN BUTTON
     ========================== */
 
-    function clearSessionAndShowLogin() {
-
-      console.log(
-        "Showing login screen"
-      );
-
-
-      localStorage.removeItem(
-        'access_token'
-      );
-
-
-      localStorage.removeItem(
-        'refresh_token'
-      );
-
+    function showLogin() {
 
       const content =
         document.getElementById(
@@ -487,7 +442,7 @@
 
 
       content.innerHTML = `
-        <button id="login-btn">
+        <button id="login-button">
           Log in with Spotify
         </button>
       `;
@@ -495,27 +450,21 @@
 
       document
         .getElementById(
-          'login-btn'
+          'login-button'
         )
         .addEventListener(
           'click',
-          () => {
-
-            redirectToAuth();
-
-          }
+          redirectToAuth
         );
     }
 
 
     /* =========================
-       EXCHANGE AUTHORIZATION
-       CODE FOR TOKENS
+       EXCHANGE LOGIN CODE
+       FOR ACCESS + REFRESH TOKEN
     ========================== */
 
-    async function getAccessToken(
-      authCode
-    ) {
+    async function getAccessToken(authCode) {
 
       const codeVerifier =
         localStorage.getItem(
@@ -524,13 +473,13 @@
 
 
       console.log(
-        "Authorization code received:",
+        'Authorization code received:',
         !!authCode
       );
 
 
       console.log(
-        "Code verifier exists:",
+        'Code verifier exists:',
         !!codeVerifier
       );
 
@@ -538,13 +487,13 @@
       if (!codeVerifier) {
 
         console.error(
-          "No code verifier found."
+          'No code verifier found.'
         );
 
 
-        clearSessionAndShowLogin();
+        showLogin();
 
-        return;
+        return false;
       }
 
 
@@ -555,14 +504,11 @@
             'https://accounts.spotify.com/api/token',
             {
 
-              method:
-                'POST',
+              method: 'POST',
 
               headers: {
-
                 'Content-Type':
                   'application/x-www-form-urlencoded'
-
               },
 
               body:
@@ -594,7 +540,7 @@
 
 
         console.log(
-          "Token response:",
+          'Token response:',
           response.status,
           data
         );
@@ -603,22 +549,34 @@
         if (!response.ok) {
 
           console.error(
-            "Token exchange failed:",
+            'Token exchange failed:',
             data
           );
 
 
-          clearSessionAndShowLogin();
+          showLogin();
 
-          return;
+          return false;
         }
 
+
+        /*
+          Save access token.
+        */
 
         localStorage.setItem(
           'access_token',
           data.access_token
         );
 
+
+        /*
+          THIS IS THE IMPORTANT PART.
+
+          Save the refresh token so
+          we can automatically get
+          a new access token later.
+        */
 
         if (data.refresh_token) {
 
@@ -627,17 +585,31 @@
             data.refresh_token
           );
 
+
+          console.log(
+            'Refresh token saved!'
+          );
+
         }
 
 
+        /*
+          We no longer need this
+          after successful login.
+        */
+
+        localStorage.removeItem(
+          'code_verifier'
+        );
+
+
         console.log(
-          "Login successful!"
+          'Login successful!'
         );
 
 
         /*
-          Remove authorization
-          code from the URL.
+          Remove ?code= from URL.
         */
 
         window.history.replaceState(
@@ -647,16 +619,18 @@
         );
 
 
-        fetchNowPlaying();
+        return true;
 
       }
       catch (err) {
 
         console.error(
-          "Token exchange error:",
+          'Token exchange error:',
           err
         );
 
+
+        return false;
       }
     }
 
@@ -676,36 +650,33 @@
       if (!refreshToken) {
 
         console.log(
-          "No refresh token found."
+          'No refresh token found.'
         );
 
 
-        clearSessionAndShowLogin();
+        showLogin();
 
         return false;
       }
 
 
+      console.log(
+        'Refreshing access token...'
+      );
+
+
       try {
-
-        console.log(
-          "Refreshing access token..."
-        );
-
 
         const response =
           await fetch(
             'https://accounts.spotify.com/api/token',
             {
 
-              method:
-                'POST',
+              method: 'POST',
 
               headers: {
-
                 'Content-Type':
                   'application/x-www-form-urlencoded'
-
               },
 
               body:
@@ -731,7 +702,7 @@
 
 
         console.log(
-          "Refresh response:",
+          'Refresh response:',
           response.status,
           data
         );
@@ -740,16 +711,36 @@
         if (!response.ok) {
 
           console.error(
-            "Refresh failed:",
+            'Refresh failed:',
             data
           );
 
 
-          clearSessionAndShowLogin();
+          /*
+            The refresh token no
+            longer works, so login
+            manually again.
+          */
+
+          localStorage.removeItem(
+            'access_token'
+          );
+
+
+          localStorage.removeItem(
+            'refresh_token'
+          );
+
+
+          showLogin();
 
           return false;
         }
 
+
+        /*
+          Save the new access token.
+        */
 
         localStorage.setItem(
           'access_token',
@@ -758,8 +749,8 @@
 
 
         /*
-          Spotify may return
-          a new refresh token.
+          Sometimes Spotify may
+          return a new refresh token.
         */
 
         if (data.refresh_token) {
@@ -773,7 +764,7 @@
 
 
         console.log(
-          "Access token refreshed!"
+          'Access token refreshed!'
         );
 
 
@@ -783,13 +774,12 @@
       catch (err) {
 
         console.error(
-          "Refresh error:",
+          'Refresh error:',
           err
         );
 
 
         return false;
-
       }
     }
 
@@ -801,9 +791,7 @@
     function formatTime(ms) {
 
       const totalSeconds =
-        Math.floor(
-          ms / 1000
-        );
+        Math.floor(ms / 1000);
 
 
       const minutes =
@@ -825,24 +813,84 @@
 
 
     /* =========================
-       FETCH CURRENT SONG
+       SHOW PAUSED SCREEN
+    ========================== */
+
+    function showPaused() {
+
+      const content =
+        document.getElementById(
+          'content'
+        );
+
+
+      content.innerHTML = `
+
+        <div
+          class="art-wrapper"
+          style="
+            background:#1c1c1e;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+          "
+        >
+
+          <span
+            style="
+              font-size:42px;
+            "
+          >
+            🎵
+          </span>
+
+        </div>
+
+
+        <div class="track-info">
+
+          <h2>
+            Paused
+          </h2>
+
+          <p>
+            Play a song on Spotify
+          </p>
+
+        </div>
+
+      `;
+    }
+
+
+    /* =========================
+       FETCH NOW PLAYING
     ========================== */
 
     async function fetchNowPlaying() {
 
       /*
-        Do not start another request
-        while one is already running.
+        Do not overlap requests.
       */
 
       if (isFetching) {
 
         return;
-
       }
 
 
-      isFetching = true;
+      /*
+        Do not request while
+        Spotify is rate limiting us.
+      */
+
+      if (
+        Date.now() <
+        rateLimitedUntil
+      ) {
+
+        return;
+      }
 
 
       const token =
@@ -854,7 +902,9 @@
       /*
         No access token.
 
-        Try refresh token first.
+        If we have a refresh token,
+        try to get a new one
+        automatically.
       */
 
       if (!token) {
@@ -863,9 +913,6 @@
           localStorage.getItem(
             'refresh_token'
           );
-
-
-        isFetching = false;
 
 
         if (refreshToken) {
@@ -882,14 +929,16 @@
 
 
           return;
-
         }
 
 
-        clearSessionAndShowLogin();
+        showLogin();
 
         return;
       }
+
+
+      isFetching = true;
 
 
       try {
@@ -900,10 +949,8 @@
             {
 
               headers: {
-
                 Authorization:
                   `Bearer ${token}`
-
               }
 
             }
@@ -916,23 +963,38 @@
 
         if (res.status === 429) {
 
-          const retryAfter =
+          const retryHeader =
             res.headers.get(
               'Retry-After'
-            ) || 5;
+            );
 
 
-          console.log(
+          let retryAfter =
+            Number(retryHeader);
+
+
+          /*
+            If Spotify does not give
+            us a retry time, wait
+            30 seconds.
+          */
+
+          if (
+            !retryAfter ||
+            retryAfter < 5
+          ) {
+
+            retryAfter = 30;
+          }
+
+
+          rateLimitedUntil =
+            Date.now() +
+            retryAfter * 1000;
+
+
+          console.warn(
             `Rate limited. Waiting ${retryAfter} seconds...`
-          );
-
-
-          isFetching = false;
-
-
-          setTimeout(
-            fetchNowPlaying,
-            Number(retryAfter) * 1000
           );
 
 
@@ -941,18 +1003,21 @@
 
 
         /* =====================
-           ACCESS TOKEN EXPIRED
+           TOKEN EXPIRED
         ====================== */
 
         if (res.status === 401) {
 
           console.log(
-            "Access token expired."
+            'Access token expired.'
           );
 
 
-          isFetching = false;
-
+          /*
+            Instead of logging in
+            again, get a new token
+            using the refresh token.
+          */
 
           const refreshed =
             await refreshAccessToken();
@@ -961,11 +1026,19 @@
           if (refreshed) {
 
             console.log(
-              "Token refreshed. Retrying..."
+              'Token refreshed. Retrying Spotify request...'
             );
 
 
-            fetchNowPlaying();
+            /*
+              Try again with the
+              new access token.
+            */
+
+            setTimeout(
+              fetchNowPlaying,
+              100
+            );
 
           }
 
@@ -983,68 +1056,26 @@
           res.status === 202
         ) {
 
-          const content =
-            document.getElementById(
-              'content'
-            );
-
-
-          content.innerHTML = `
-
-            <div
-              class="art-wrapper"
-              style="
-                background:#1c1c1e;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-              "
-            >
-
-              <span
-                style="
-                  font-size:42px;
-                "
-              >
-                🎵
-              </span>
-
-            </div>
-
-
-            <div class="track-info">
-
-              <h2>
-                Paused
-              </h2>
-
-              <p>
-                Play a song on Spotify
-              </p>
-
-            </div>
-
-          `;
-
+          showPaused();
 
           return;
         }
 
 
         /* =====================
-           OTHER API ERRORS
+           OTHER ERROR
         ====================== */
 
         if (!res.ok) {
 
-          const errorData =
+          const errorText =
             await res.text();
 
 
           console.error(
-            "Spotify API error:",
+            'Spotify API error:',
             res.status,
-            errorData
+            errorText
           );
 
 
@@ -1060,12 +1091,13 @@
           await res.json();
 
 
+        /*
+          Extra safety check.
+        */
+
         if (!data.item) {
 
-          console.log(
-            "No track currently playing."
-          );
-
+          showPaused();
 
           return;
         }
@@ -1085,10 +1117,7 @@
 
         const pct =
           (
-            (
-              progressMs /
-              durationMs
-            ) * 100
+            (progressMs / durationMs) * 100
           ).toFixed(1);
 
 
@@ -1105,7 +1134,7 @@
             <img
               src="${track.album.images[0].url}"
               alt="Album Art"
-            >
+            />
 
           </div>
 
@@ -1153,8 +1182,7 @@
 
               <span>
                 -${formatTime(
-                  durationMs -
-                  progressMs
+                  durationMs - progressMs
                 )}
               </span>
 
@@ -1168,16 +1196,12 @@
       catch (err) {
 
         console.error(
-          "Now playing error:",
+          'Now playing error:',
           err
         );
 
       }
       finally {
-
-        /*
-          Allow the next request.
-        */
 
         isFetching = false;
 
@@ -1186,43 +1210,62 @@
 
 
     /* =========================
-       APP STARTUP
+       START APP
     ========================== */
 
-    if (code) {
+    async function startApp() {
 
       /*
-        Returned from Spotify login.
+        We just came back from
+        Spotify login.
       */
 
-      getAccessToken(
-        code
-      );
+      if (code) {
 
-    }
-    else {
+        const loggedIn =
+          await getAccessToken(
+            code
+          );
+
+
+        if (loggedIn) {
+
+          fetchNowPlaying();
+
+        }
+
+      }
+      else {
+
+        /*
+          Normal startup.
+        */
+
+        fetchNowPlaying();
+
+      }
+
 
       /*
-        Normal startup.
-      */
+        IMPORTANT:
 
-      fetchNowPlaying();
+        Do NOT poll every second.
 
+        Every second was causing
+        the 429 rate limit errors.
 
-      /*
-        Only ask Spotify every
-        5 seconds.
-
-        This prevents the 429
-        Too Many Requests error.
+        Five seconds is a much
+        safer starting point.
       */
 
       setInterval(
         fetchNowPlaying,
         5000
       );
-
     }
+
+
+    startApp();
 
   </script>
 
