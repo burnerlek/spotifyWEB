@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>Kraken Spotify Display</title>
 
@@ -16,6 +19,7 @@
       padding: 0;
       background: #000;
       color: #fff;
+
       font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -26,12 +30,15 @@
         Helvetica,
         Arial,
         sans-serif;
+
       height: 100vh;
       width: 100vw;
+
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+
       overflow: hidden;
       border-radius: 50%;
     }
@@ -41,20 +48,25 @@
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
+
       text-align: center;
+
       width: 100%;
       height: 100%;
+
       padding: 26px 16px 20px;
     }
 
-    /* Album Art */
-
     .art-wrapper {
       position: relative;
+
       width: 160px;
       height: 160px;
+
       border-radius: 26px;
+
       margin-top: 10px;
+
       box-shadow:
         0 12px 35px rgba(0, 0, 0, 0.9),
         0 0 0 1px rgba(255, 255, 255, 0.12);
@@ -63,96 +75,131 @@
     .art-wrapper img {
       width: 100%;
       height: 100%;
+
       object-fit: cover;
       border-radius: 26px;
     }
 
     .track-info {
       width: 84%;
+
       display: flex;
       flex-direction: column;
       align-items: center;
+
       margin: 6px 0 2px;
     }
 
     h2 {
       font-size: 16px;
       font-weight: 700;
+
       margin: 0;
       width: 100%;
+
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+
       letter-spacing: -0.3px;
     }
 
     p {
       font-size: 12px;
+
       color: rgba(255, 255, 255, 0.65);
+
       margin: 2px 0 0;
       width: 100%;
+
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Progress Bar */
-
     .progress-container {
       width: 68%;
+
       display: flex;
       flex-direction: column;
+
       gap: 4px;
+
       margin-bottom: 16px;
     }
 
     .bar-background {
       width: 100%;
       height: 4px;
+
       background: rgba(255, 255, 255, 0.2);
+
       border-radius: 2px;
+
       position: relative;
     }
 
     .bar-fill {
       height: 100%;
+
       background: #fff;
+
       border-radius: 2px;
+
       width: 0%;
+
       position: relative;
     }
 
     .bar-fill::after {
       content: '';
+
       position: absolute;
+
       right: -4px;
       top: 50%;
+
       transform: translateY(-50%);
+
       width: 8px;
       height: 8px;
+
       background: #fff;
+
       border-radius: 50%;
+
       box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
     }
 
     .time-labels {
       display: flex;
+
       justify-content: space-between;
+
       font-size: 10px;
+
       color: rgba(255, 255, 255, 0.55);
+
       font-weight: 600;
+
       font-variant-numeric: tabular-nums;
+
       padding: 0 2px;
     }
 
     button {
       padding: 10px 20px;
+
       font-size: 12px;
+
       cursor: pointer;
+
       border-radius: 20px;
       border: none;
+
       background: #1db954;
       color: #fff;
+
       font-weight: 700;
     }
   </style>
@@ -160,50 +207,65 @@
 
 <body>
 
-  <div id="content" class="widget">
+  <div
+    id="content"
+    class="widget"
+  >
     Loading...
   </div>
 
+
   <script>
 
-    const CLIENT_ID = '60acf98167984de5820f1a96728ddce6';
+    const CLIENT_ID =
+      '60acf98167984de5820f1a96728ddce6';
+
 
     const REDIRECT_URI =
       'https://burnerlek.github.io/spotifyWEB/';
+
 
     const SCOPES =
       'user-read-currently-playing user-read-playback-state';
 
 
     /*
-      Normal time between Spotify requests.
+      How often we ask Spotify
+      for fresh information.
 
-      10 seconds means 6 requests per minute.
+      The progress bar itself will
+      move smoothly between requests.
     */
 
     const NORMAL_DELAY = 10000;
 
 
-    /*
-      Used for exponential backoff
-      if Spotify rate limits us.
-    */
-
     let rateLimitDelay = 30000;
 
+    let isFetching = false;
+
 
     /*
-      Prevent multiple requests
-      from running simultaneously.
+      These variables store the
+      current song progress locally.
     */
 
-    let isFetching = false;
+    let currentProgressMs = 0;
+
+    let currentDurationMs = 0;
+
+    let lastSpotifyUpdate = 0;
+
+    let isPlaying = false;
+
+    let animationFrameId = null;
 
 
     const params =
       new URLSearchParams(
         window.location.search
       );
+
 
     const code =
       params.get('code');
@@ -218,10 +280,12 @@
       const possible =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
+
       const values =
         crypto.getRandomValues(
           new Uint8Array(length)
         );
+
 
       return values.reduce(
         (acc, x) =>
@@ -239,8 +303,10 @@
       const encoder =
         new TextEncoder();
 
+
       const data =
         encoder.encode(plain);
+
 
       return window.crypto.subtle.digest(
         'SHA-256',
@@ -271,11 +337,17 @@
       const codeVerifier =
         generateRandomString(64);
 
+
       const hashed =
-        await sha256(codeVerifier);
+        await sha256(
+          codeVerifier
+        );
+
 
       const codeChallenge =
-        base64encode(hashed);
+        base64encode(
+          hashed
+        );
 
 
       localStorage.setItem(
@@ -293,17 +365,23 @@
       authUrl.search =
         new URLSearchParams({
 
-          response_type: 'code',
+          response_type:
+            'code',
 
-          client_id: CLIENT_ID,
+          client_id:
+            CLIENT_ID,
 
-          scope: SCOPES,
+          scope:
+            SCOPES,
 
-          code_challenge_method: 'S256',
+          code_challenge_method:
+            'S256',
 
-          code_challenge: codeChallenge,
+          code_challenge:
+            codeChallenge,
 
-          redirect_uri: REDIRECT_URI
+          redirect_uri:
+            REDIRECT_URI
 
         }).toString();
 
@@ -315,8 +393,13 @@
 
     function showLogin() {
 
+      stopProgressAnimation();
+
+
       const content =
-        document.getElementById('content');
+        document.getElementById(
+          'content'
+        );
 
 
       content.innerHTML = `
@@ -327,7 +410,9 @@
 
 
       document
-        .getElementById('login-button')
+        .getElementById(
+          'login-button'
+        )
         .addEventListener(
           'click',
           redirectToAuth
@@ -361,10 +446,6 @@
 
       if (!codeVerifier) {
 
-        console.error(
-          'No code verifier found.'
-        );
-
         showLogin();
 
         return false;
@@ -377,6 +458,7 @@
           await fetch(
             'https://accounts.spotify.com/api/token',
             {
+
               method: 'POST',
 
               headers: {
@@ -387,12 +469,14 @@
               body:
                 new URLSearchParams({
 
-                  client_id: CLIENT_ID,
+                  client_id:
+                    CLIENT_ID,
 
                   grant_type:
                     'authorization_code',
 
-                  code: authCode,
+                  code:
+                    authCode,
 
                   redirect_uri:
                     REDIRECT_URI,
@@ -401,6 +485,7 @@
                     codeVerifier
 
                 })
+
             }
           );
 
@@ -422,6 +507,7 @@
             data
           );
 
+
           showLogin();
 
           return false;
@@ -440,6 +526,7 @@
             'refresh_token',
             data.refresh_token
           );
+
 
           console.log(
             'Refresh token saved!'
@@ -474,13 +561,14 @@
           err
         );
 
+
         return false;
       }
     }
 
 
     /* =========================
-       REFRESH TOKEN
+       REFRESH ACCESS TOKEN
     ========================== */
 
     async function refreshAccessToken() {
@@ -492,10 +580,6 @@
 
 
       if (!refreshToken) {
-
-        console.log(
-          'No refresh token found.'
-        );
 
         showLogin();
 
@@ -514,6 +598,7 @@
           await fetch(
             'https://accounts.spotify.com/api/token',
             {
+
               method: 'POST',
 
               headers: {
@@ -524,7 +609,8 @@
               body:
                 new URLSearchParams({
 
-                  client_id: CLIENT_ID,
+                  client_id:
+                    CLIENT_ID,
 
                   grant_type:
                     'refresh_token',
@@ -533,6 +619,7 @@
                     refreshToken
 
                 })
+
             }
           );
 
@@ -548,12 +635,6 @@
 
 
         if (!response.ok) {
-
-          console.error(
-            'Refresh failed:',
-            data
-          );
-
 
           localStorage.removeItem(
             'access_token'
@@ -575,11 +656,6 @@
           data.access_token
         );
 
-
-        /*
-          Save a new refresh token
-          if Spotify gives us one.
-        */
 
         if (data.refresh_token) {
 
@@ -605,6 +681,7 @@
           err
         );
 
+
         return false;
       }
     }
@@ -619,11 +696,16 @@
       const totalSeconds =
         Math.floor(ms / 1000);
 
+
       const minutes =
-        Math.floor(totalSeconds / 60);
+        Math.floor(
+          totalSeconds / 60
+        );
+
 
       const seconds =
         totalSeconds % 60;
+
 
       return `${minutes}:${
         seconds < 10
@@ -634,16 +716,182 @@
 
 
     /* =========================
+       STOP SMOOTH PROGRESS
+    ========================== */
+
+    function stopProgressAnimation() {
+
+      if (animationFrameId) {
+
+        cancelAnimationFrame(
+          animationFrameId
+        );
+
+        animationFrameId = null;
+      }
+    }
+
+
+    /* =========================
+       SMOOTH PROGRESS LOOP
+    ========================== */
+
+    function updateProgressAnimation() {
+
+      /*
+        Find the HTML elements.
+      */
+
+      const progressBar =
+        document.getElementById(
+          'progress-bar'
+        );
+
+
+      const currentTime =
+        document.getElementById(
+          'current-time'
+        );
+
+
+      const remainingTime =
+        document.getElementById(
+          'remaining-time'
+        );
+
+
+      /*
+        If the song display isn't
+        currently on screen, stop.
+      */
+
+      if (
+        !progressBar ||
+        !currentTime ||
+        !remainingTime
+      ) {
+
+        animationFrameId = null;
+
+        return;
+      }
+
+
+      let progress =
+        currentProgressMs;
+
+
+      /*
+        If Spotify says the song
+        is playing, calculate how
+        much real time has passed
+        since the last API update.
+      */
+
+      if (isPlaying) {
+
+        const elapsed =
+          Date.now() -
+          lastSpotifyUpdate;
+
+
+        progress =
+          currentProgressMs +
+          elapsed;
+      }
+
+
+      /*
+        Don't go past the song end.
+      */
+
+      if (
+        progress >
+        currentDurationMs
+      ) {
+
+        progress =
+          currentDurationMs;
+      }
+
+
+      const pct =
+        (
+          progress /
+          currentDurationMs
+        ) * 100;
+
+
+      /*
+        Move the scrubber smoothly.
+      */
+
+      progressBar.style.width =
+        `${pct}%`;
+
+
+      /*
+        Update the time labels.
+      */
+
+      currentTime.textContent =
+        formatTime(progress);
+
+
+      remainingTime.textContent =
+        `-${formatTime(
+          Math.max(
+            0,
+            currentDurationMs - progress
+          )
+        )}`;
+
+
+      /*
+        Run again on the next
+        browser animation frame.
+      */
+
+      animationFrameId =
+        requestAnimationFrame(
+          updateProgressAnimation
+        );
+    }
+
+
+    /* =========================
+       START SMOOTH PROGRESS
+    ========================== */
+
+    function startProgressAnimation() {
+
+      stopProgressAnimation();
+
+
+      animationFrameId =
+        requestAnimationFrame(
+          updateProgressAnimation
+        );
+    }
+
+
+    /* =========================
        PAUSED DISPLAY
     ========================== */
 
     function showPaused() {
 
+      stopProgressAnimation();
+
+
       const content =
-        document.getElementById('content');
+        document.getElementById(
+          'content'
+        );
 
 
       content.innerHTML = `
+
         <div
           class="art-wrapper"
           style="
@@ -662,21 +910,28 @@
           <h2>Paused</h2>
           <p>Play a song on Spotify</p>
         </div>
+
       `;
     }
 
 
     /* =========================
-       SHOW WAITING MESSAGE
+       RATE LIMITED DISPLAY
     ========================== */
 
     function showRateLimited(seconds) {
 
+      stopProgressAnimation();
+
+
       const content =
-        document.getElementById('content');
+        document.getElementById(
+          'content'
+        );
 
 
       content.innerHTML = `
+
         <div
           class="art-wrapper"
           style="
@@ -693,10 +948,12 @@
 
         <div class="track-info">
           <h2>Spotify is busy</h2>
+
           <p>
             Trying again in ${seconds} seconds...
           </p>
         </div>
+
       `;
     }
 
@@ -719,34 +976,65 @@
         data.item;
 
 
-      const progressMs =
+      /*
+        Save the progress Spotify
+        gave us.
+      */
+
+      currentProgressMs =
         data.progress_ms || 0;
 
 
-      const durationMs =
+      currentDurationMs =
         track.duration_ms;
+
+
+      /*
+        Save the exact local time
+        when Spotify gave us this
+        progress position.
+      */
+
+      lastSpotifyUpdate =
+        Date.now();
+
+
+      /*
+        Check whether Spotify says
+        the song is playing.
+      */
+
+      isPlaying =
+        data.is_playing === true;
 
 
       const pct =
         (
-          (progressMs / durationMs) *
-          100
-        ).toFixed(1);
+          currentProgressMs /
+          currentDurationMs
+        ) * 100;
 
 
       const content =
-        document.getElementById('content');
+        document.getElementById(
+          'content'
+        );
 
 
       content.innerHTML = `
+
         <div class="art-wrapper">
+
           <img
             src="${track.album.images[0].url}"
             alt="Album Art"
           >
+
         </div>
 
+
         <div class="track-info">
+
           <h2>
             ${track.name}
           </h2>
@@ -756,40 +1044,58 @@
               .map(a => a.name)
               .join(', ')}
           </p>
+
         </div>
+
 
         <div class="progress-container">
 
           <div class="bar-background">
 
             <div
+              id="progress-bar"
               class="bar-fill"
-              style="width: ${pct}%"
+              style="
+                width: ${pct}%;
+              "
             ></div>
 
           </div>
 
+
           <div class="time-labels">
 
-            <span>
-              ${formatTime(progressMs)}
+            <span id="current-time">
+              ${formatTime(
+                currentProgressMs
+              )}
             </span>
 
-            <span>
+
+            <span id="remaining-time">
               -${formatTime(
-                durationMs - progressMs
+                currentDurationMs -
+                currentProgressMs
               )}
             </span>
 
           </div>
 
         </div>
+
       `;
+
+
+      /*
+        Start smooth movement.
+      */
+
+      startProgressAnimation();
     }
 
 
     /* =========================
-       CONTROLLED UPDATE LOOP
+       SCHEDULE NEXT REQUEST
     ========================== */
 
     function scheduleNextFetch(delay) {
@@ -801,18 +1107,13 @@
     }
 
 
+    /* =========================
+       FETCH SPOTIFY
+    ========================== */
+
     async function fetchNowPlaying() {
 
-      /*
-        This should never happen now,
-        but keeps us extra safe.
-      */
-
       if (isFetching) {
-
-        console.log(
-          'Request already running.'
-        );
 
         return;
       }
@@ -828,12 +1129,6 @@
             'access_token'
           );
 
-
-        /*
-          No access token?
-
-          Try refresh token first.
-        */
 
         if (!token) {
 
@@ -860,10 +1155,12 @@
           await fetch(
             'https://api.spotify.com/v1/me/player/currently-playing',
             {
+
               headers: {
                 Authorization:
                   `Bearer ${token}`
               }
+
             }
           );
 
@@ -881,14 +1178,10 @@
 
 
           let waitSeconds =
-            Number(retryHeader);
+            Number(
+              retryHeader
+            );
 
-
-          /*
-            If Spotify gives us
-            no Retry-After value,
-            use our current delay.
-          */
 
           if (
             !waitSeconds ||
@@ -905,18 +1198,16 @@
           );
 
 
-          showRateLimited(
-            waitSeconds
-          );
-
-
           /*
-            Increase the wait time
-            next time if we continue
-            getting rate limited.
+            IMPORTANT:
 
-            30 → 60 → 120 → 240 → 300
+            We don't replace the
+            current song display.
+
+            The progress bar can
+            continue moving locally.
           */
+
 
           rateLimitDelay =
             Math.min(
@@ -939,8 +1230,6 @@
 
         /*
           Successful request.
-
-          Reset the rate limit delay.
         */
 
         rateLimitDelay =
@@ -952,11 +1241,6 @@
         ====================== */
 
         if (res.status === 401) {
-
-          console.log(
-            'Access token expired.'
-          );
-
 
           const refreshed =
             await refreshAccessToken();
@@ -988,18 +1272,21 @@
 
           showPaused();
 
+
           isFetching = false;
+
 
           scheduleNextFetch(
             NORMAL_DELAY
           );
+
 
           return;
         }
 
 
         /* =====================
-           OTHER ERRORS
+           OTHER ERROR
         ====================== */
 
         if (!res.ok) {
@@ -1016,6 +1303,7 @@
           scheduleNextFetch(
             NORMAL_DELAY
           );
+
 
           return;
         }
@@ -1067,12 +1355,15 @@
       if (code) {
 
         const loggedIn =
-          await getAccessToken(code);
+          await getAccessToken(
+            code
+          );
 
 
         if (loggedIn) {
 
           fetchNowPlaying();
+
         }
 
       }
@@ -1090,7 +1381,10 @@
           );
 
 
-        if (!token && !refreshToken) {
+        if (
+          !token &&
+          !refreshToken
+        ) {
 
           showLogin();
 
