@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -10,6 +11,7 @@
   <title>Kraken Spotify Display</title>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -17,6 +19,7 @@
     body {
       margin: 0;
       padding: 0;
+
       background: #000;
       color: #fff;
 
@@ -35,15 +38,18 @@
       width: 100vw;
 
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
 
       overflow: hidden;
+
       border-radius: 50%;
     }
 
     .widget {
+      width: 100%;
+      height: 100%;
+
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -51,11 +57,13 @@
 
       text-align: center;
 
-      width: 100%;
-      height: 100%;
-
       padding: 26px 16px 20px;
     }
+
+
+    /* =========================
+       SPOTIFY DISPLAY
+    ========================== */
 
     .art-wrapper {
       position: relative;
@@ -77,6 +85,7 @@
       height: 100%;
 
       object-fit: cover;
+
       border-radius: 26px;
     }
 
@@ -95,6 +104,7 @@
       font-weight: 700;
 
       margin: 0;
+
       width: 100%;
 
       white-space: nowrap;
@@ -110,12 +120,18 @@
       color: rgba(255, 255, 255, 0.65);
 
       margin: 2px 0 0;
+
       width: 100%;
 
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
+
+    /* =========================
+       PROGRESS BAR
+    ========================== */
 
     .progress-container {
       width: 68%;
@@ -168,7 +184,8 @@
 
       border-radius: 50%;
 
-      box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+      box-shadow:
+        0 0 4px rgba(0, 0, 0, 0.5);
     }
 
     .time-labels {
@@ -187,6 +204,71 @@
       padding: 0 2px;
     }
 
+
+    /* =========================
+       CLOCK DISPLAY
+    ========================== */
+
+    .clock-widget {
+      width: 100%;
+      height: 100%;
+
+      display: flex;
+      flex-direction: column;
+
+      align-items: center;
+      justify-content: center;
+
+      text-align: center;
+
+      padding-bottom: 10px;
+    }
+
+    .clock-time {
+      font-size: 52px;
+
+      font-weight: 700;
+
+      letter-spacing: -2px;
+
+      line-height: 1;
+
+      font-variant-numeric: tabular-nums;
+    }
+
+    .clock-ampm {
+      font-size: 14px;
+
+      font-weight: 600;
+
+      color: rgba(255, 255, 255, 0.55);
+
+      margin-top: 6px;
+
+      letter-spacing: 1px;
+    }
+
+    .clock-day {
+      font-size: 18px;
+
+      font-weight: 600;
+
+      margin-top: 20px;
+    }
+
+    .clock-date {
+      font-size: 13px;
+
+      color: rgba(255, 255, 255, 0.55);
+
+      margin-top: 4px;
+    }
+
+
+    /* =========================
+       LOGIN BUTTON
+    ========================== */
+
     button {
       padding: 10px 20px;
 
@@ -195,15 +277,19 @@
       cursor: pointer;
 
       border-radius: 20px;
+
       border: none;
 
       background: #1db954;
+
       color: #fff;
 
       font-weight: 700;
     }
+
   </style>
 </head>
+
 
 <body>
 
@@ -216,6 +302,10 @@
 
 
   <script>
+
+    /* =========================
+       SPOTIFY SETTINGS
+    ========================== */
 
     const CLIENT_ID =
       '60acf98167984de5820f1a96728ddce6';
@@ -230,11 +320,10 @@
 
 
     /*
-      How often we ask Spotify
-      for fresh information.
+      Ask Spotify every 10 seconds.
 
-      The progress bar itself will
-      move smoothly between requests.
+      The progress bar moves smoothly
+      locally between requests.
     */
 
     const NORMAL_DELAY = 10000;
@@ -245,10 +334,9 @@
     let isFetching = false;
 
 
-    /*
-      These variables store the
-      current song progress locally.
-    */
+    /* =========================
+       SPOTIFY PROGRESS STATE
+    ========================== */
 
     let currentProgressMs = 0;
 
@@ -259,6 +347,13 @@
     let isPlaying = false;
 
     let animationFrameId = null;
+
+
+    /* =========================
+       CLOCK STATE
+    ========================== */
+
+    let clockIntervalId = null;
 
 
     const params =
@@ -272,7 +367,7 @@
 
 
     /* =========================
-       PKCE
+       PKCE HELPERS
     ========================== */
 
     function generateRandomString(length) {
@@ -395,6 +490,8 @@
 
       stopProgressAnimation();
 
+      stopClock();
+
 
       const content =
         document.getElementById(
@@ -421,7 +518,7 @@
 
 
     /* =========================
-       GET FIRST TOKENS
+       FIRST TOKEN
     ========================== */
 
     async function getAccessToken(authCode) {
@@ -432,19 +529,12 @@
         );
 
 
-      console.log(
-        'Authorization code received:',
-        !!authCode
-      );
-
-
-      console.log(
-        'Code verifier exists:',
-        !!codeVerifier
-      );
-
-
       if (!codeVerifier) {
+
+        console.error(
+          'No code verifier found.'
+        );
+
 
         showLogin();
 
@@ -462,8 +552,10 @@
               method: 'POST',
 
               headers: {
+
                 'Content-Type':
                   'application/x-www-form-urlencoded'
+
               },
 
               body:
@@ -527,10 +619,6 @@
             data.refresh_token
           );
 
-
-          console.log(
-            'Refresh token saved!'
-          );
         }
 
 
@@ -568,7 +656,7 @@
 
 
     /* =========================
-       REFRESH ACCESS TOKEN
+       REFRESH TOKEN
     ========================== */
 
     async function refreshAccessToken() {
@@ -589,11 +677,6 @@
 
       try {
 
-        console.log(
-          'Refreshing access token...'
-        );
-
-
         const response =
           await fetch(
             'https://accounts.spotify.com/api/token',
@@ -602,8 +685,10 @@
               method: 'POST',
 
               headers: {
+
                 'Content-Type':
                   'application/x-www-form-urlencoded'
+
               },
 
               body:
@@ -657,6 +742,11 @@
         );
 
 
+        /*
+          Spotify may sometimes return
+          a new refresh token.
+        */
+
         if (data.refresh_token) {
 
           localStorage.setItem(
@@ -688,13 +778,15 @@
 
 
     /* =========================
-       FORMAT TIME
+       TIME FORMAT
     ========================== */
 
     function formatTime(ms) {
 
       const totalSeconds =
-        Math.floor(ms / 1000);
+        Math.floor(
+          ms / 1000
+        );
 
 
       const minutes =
@@ -716,7 +808,7 @@
 
 
     /* =========================
-       STOP SMOOTH PROGRESS
+       STOP PROGRESS
     ========================== */
 
     function stopProgressAnimation() {
@@ -727,20 +819,17 @@
           animationFrameId
         );
 
+
         animationFrameId = null;
       }
     }
 
 
     /* =========================
-       SMOOTH PROGRESS LOOP
+       SMOOTH PROGRESS
     ========================== */
 
     function updateProgressAnimation() {
-
-      /*
-        Find the HTML elements.
-      */
 
       const progressBar =
         document.getElementById(
@@ -760,11 +849,6 @@
         );
 
 
-      /*
-        If the song display isn't
-        currently on screen, stop.
-      */
-
       if (
         !progressBar ||
         !currentTime ||
@@ -781,13 +865,6 @@
         currentProgressMs;
 
 
-      /*
-        If Spotify says the song
-        is playing, calculate how
-        much real time has passed
-        since the last API update.
-      */
-
       if (isPlaying) {
 
         const elapsed =
@@ -801,18 +878,11 @@
       }
 
 
-      /*
-        Don't go past the song end.
-      */
-
-      if (
-        progress >
-        currentDurationMs
-      ) {
-
-        progress =
-          currentDurationMs;
-      }
+      progress =
+        Math.min(
+          progress,
+          currentDurationMs
+        );
 
 
       const pct =
@@ -822,17 +892,9 @@
         ) * 100;
 
 
-      /*
-        Move the scrubber smoothly.
-      */
-
       progressBar.style.width =
         `${pct}%`;
 
-
-      /*
-        Update the time labels.
-      */
 
       currentTime.textContent =
         formatTime(progress);
@@ -842,15 +904,11 @@
         `-${formatTime(
           Math.max(
             0,
-            currentDurationMs - progress
+            currentDurationMs -
+            progress
           )
         )}`;
 
-
-      /*
-        Run again on the next
-        browser animation frame.
-      */
 
       animationFrameId =
         requestAnimationFrame(
@@ -858,10 +916,6 @@
         );
     }
 
-
-    /* =========================
-       START SMOOTH PROGRESS
-    ========================== */
 
     function startProgressAnimation() {
 
@@ -876,12 +930,134 @@
 
 
     /* =========================
-       PAUSED DISPLAY
+       CLOCK
     ========================== */
 
-    function showPaused() {
+    function stopClock() {
+
+      if (clockIntervalId) {
+
+        clearInterval(
+          clockIntervalId
+        );
+
+
+        clockIntervalId = null;
+      }
+    }
+
+
+    function updateClock() {
+
+      const timeElement =
+        document.getElementById(
+          'clock-time'
+        );
+
+
+      const ampmElement =
+        document.getElementById(
+          'clock-ampm'
+        );
+
+
+      const dayElement =
+        document.getElementById(
+          'clock-day'
+        );
+
+
+      const dateElement =
+        document.getElementById(
+          'clock-date'
+        );
+
+
+      /*
+        If the clock isn't currently
+        displayed, stop updating.
+      */
+
+      if (
+        !timeElement ||
+        !ampmElement ||
+        !dayElement ||
+        !dateElement
+      ) {
+
+        stopClock();
+
+        return;
+      }
+
+
+      const now =
+        new Date();
+
+
+      let hours =
+        now.getHours();
+
+
+      const minutes =
+        now.getMinutes();
+
+
+      const ampm =
+        hours >= 12
+          ? 'PM'
+          : 'AM';
+
+
+      hours =
+        hours % 12;
+
+
+      if (hours === 0) {
+
+        hours = 12;
+      }
+
+
+      const formattedMinutes =
+        minutes < 10
+          ? `0${minutes}`
+          : minutes;
+
+
+      timeElement.textContent =
+        `${hours}:${formattedMinutes}`;
+
+
+      ampmElement.textContent =
+        ampm;
+
+
+      dayElement.textContent =
+        now.toLocaleDateString(
+          'en-US',
+          {
+            weekday: 'long'
+          }
+        );
+
+
+      dateElement.textContent =
+        now.toLocaleDateString(
+          'en-US',
+          {
+            month: 'long',
+            day: 'numeric'
+          }
+        );
+    }
+
+
+    function showClock() {
 
       stopProgressAnimation();
+
+      stopClock();
 
 
       const content =
@@ -892,81 +1068,66 @@
 
       content.innerHTML = `
 
-        <div
-          class="art-wrapper"
-          style="
-            background:#1c1c1e;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-          "
-        >
-          <span style="font-size:42px;">
-            🎵
-          </span>
-        </div>
+        <div class="clock-widget">
 
-        <div class="track-info">
-          <h2>Paused</h2>
-          <p>Play a song on Spotify</p>
+          <div
+            id="clock-time"
+            class="clock-time"
+          >
+            --:--
+          </div>
+
+
+          <div
+            id="clock-ampm"
+            class="clock-ampm"
+          >
+            --
+          </div>
+
+
+          <div
+            id="clock-day"
+            class="clock-day"
+          >
+            Loading...
+          </div>
+
+
+          <div
+            id="clock-date"
+            class="clock-date"
+          >
+          </div>
+
         </div>
 
       `;
-    }
 
 
-    /* =========================
-       RATE LIMITED DISPLAY
-    ========================== */
-
-    function showRateLimited(seconds) {
-
-      stopProgressAnimation();
+      updateClock();
 
 
-      const content =
-        document.getElementById(
-          'content'
+      clockIntervalId =
+        setInterval(
+          updateClock,
+          1000
         );
-
-
-      content.innerHTML = `
-
-        <div
-          class="art-wrapper"
-          style="
-            background:#1c1c1e;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-          "
-        >
-          <span style="font-size:42px;">
-            🎵
-          </span>
-        </div>
-
-        <div class="track-info">
-          <h2>Spotify is busy</h2>
-
-          <p>
-            Trying again in ${seconds} seconds...
-          </p>
-        </div>
-
-      `;
     }
 
 
     /* =========================
-       DISPLAY SONG
+       DISPLAY TRACK
     ========================== */
 
     function showTrack(data) {
 
+      stopClock();
+
+
       if (!data.item) {
 
-        showPaused();
+        showClock();
 
         return;
       }
@@ -976,11 +1137,6 @@
         data.item;
 
 
-      /*
-        Save the progress Spotify
-        gave us.
-      */
-
       currentProgressMs =
         data.progress_ms || 0;
 
@@ -989,20 +1145,9 @@
         track.duration_ms;
 
 
-      /*
-        Save the exact local time
-        when Spotify gave us this
-        progress position.
-      */
-
       lastSpotifyUpdate =
         Date.now();
 
-
-      /*
-        Check whether Spotify says
-        the song is playing.
-      */
 
       isPlaying =
         data.is_playing === true;
@@ -1041,7 +1186,9 @@
 
           <p>
             ${track.artists
-              .map(a => a.name)
+              .map(
+                a => a.name
+              )
               .join(', ')}
           </p>
 
@@ -1086,16 +1233,12 @@
       `;
 
 
-      /*
-        Start smooth movement.
-      */
-
       startProgressAnimation();
     }
 
 
     /* =========================
-       SCHEDULE NEXT REQUEST
+       SCHEDULE NEXT FETCH
     ========================== */
 
     function scheduleNextFetch(delay) {
@@ -1130,6 +1273,11 @@
           );
 
 
+        /*
+          If the access token is gone,
+          try using the refresh token.
+        */
+
         if (!token) {
 
           const refreshed =
@@ -1157,8 +1305,10 @@
             {
 
               headers: {
+
                 Authorization:
                   `Bearer ${token}`
+
               }
 
             }
@@ -1199,13 +1349,10 @@
 
 
           /*
-            IMPORTANT:
+            Keep the current display.
 
-            We don't replace the
-            current song display.
-
-            The progress bar can
-            continue moving locally.
+            If music was not playing,
+            the clock stays visible.
           */
 
 
@@ -1230,6 +1377,7 @@
 
         /*
           Successful request.
+          Reset rate-limit delay.
         */
 
         rateLimitDelay =
@@ -1237,10 +1385,15 @@
 
 
         /* =====================
-           TOKEN EXPIRED
+           ACCESS TOKEN EXPIRED
         ====================== */
 
         if (res.status === 401) {
+
+          console.log(
+            'Access token expired.'
+          );
+
 
           const refreshed =
             await refreshAccessToken();
@@ -1270,7 +1423,7 @@
           res.status === 202
         ) {
 
-          showPaused();
+          showClock();
 
 
           isFetching = false;
@@ -1297,6 +1450,11 @@
           );
 
 
+          /*
+            Keep showing whatever
+            is currently displayed.
+          */
+
           isFetching = false;
 
 
@@ -1317,7 +1475,27 @@
           await res.json();
 
 
-        showTrack(data);
+        /*
+          If Spotify returns no item
+          or says playback is paused,
+          show the clock.
+        */
+
+        if (
+          !data.item ||
+          data.is_playing !== true
+        ) {
+
+          showClock();
+
+        }
+        else {
+
+          showTrack(
+            data
+          );
+
+        }
 
 
         isFetching = false;
@@ -1366,34 +1544,48 @@
 
         }
 
+        return;
       }
-      else {
-
-        const token =
-          localStorage.getItem(
-            'access_token'
-          );
 
 
-        const refreshToken =
-          localStorage.getItem(
-            'refresh_token'
-          );
+      const token =
+        localStorage.getItem(
+          'access_token'
+        );
 
 
-        if (
-          !token &&
-          !refreshToken
-        ) {
-
-          showLogin();
-
-          return;
-        }
+      const refreshToken =
+        localStorage.getItem(
+          'refresh_token'
+        );
 
 
-        fetchNowPlaying();
+      /*
+        No login yet.
+      */
+
+      if (
+        !token &&
+        !refreshToken
+      ) {
+
+        showLogin();
+
+        return;
       }
+
+
+      /*
+        Start Spotify checking.
+
+        Until we get the first result,
+        show the clock instead of
+        "Loading..."
+      */
+
+      showClock();
+
+      fetchNowPlaying();
     }
 
 
